@@ -42,6 +42,11 @@ py_library(
     ],
     srcs_version = "PY3",
     deps = [
+        "//third_party/py/absl/logging",
         "//jax",
+        "//third_party/py/opt_einsum",
+        "@org_tensorflow//tensorflow/compiler/xla:xla_data_proto_py_pb2",
+        "@org_tensorflow//tensorflow/core:protos_all_py_pb2",
+        "@org_tensorflow//tensorflow/python/framework:for_generated_wrappers",
     ] + py_deps("numpy") + py_deps("tensorflow") + jax2tf_deps,
 )

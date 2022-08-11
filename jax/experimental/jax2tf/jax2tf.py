@@ -55,8 +55,10 @@ from jax._src.lax import windowed_reductions as lax_windowed_reductions
 from jax._src import lib as jaxlib
 from jax._src.lib import xla_client
 
+from jax.experimental.global_device_array import GlobalDeviceArray
 from jax.experimental.jax2tf import shape_poly
 from jax.experimental.jax2tf import impl_no_xla
+
 
 import numpy as np
 import tensorflow as tf  # type: ignore[import]
@@ -782,6 +784,17 @@ def _to_jax_dtype(tf_dtype):
   return dtypes.canonicalize_dtype(tf_dtype.as_numpy_dtype)
 
 
+def _maybe_decode_gda(x):
+  # Get gda._value() for GlobalDeviceArray.
+  # Note gda._value() does not support multi-process mode.
+  if jax.process_count() != 1:
+    raise RuntimeError("GlobalDeviceArray does not support multi-process"
+                       f" currently. Process num = {jax.process_count()}")
+  if isinstance(x, GlobalDeviceArray):
+    return x._value
+  return x
+
+
 def _tfval_to_tensor_jax_dtype(val: TfVal,
                                jax_dtype: Optional[DType] = None,
                                memoize_constants=False) -> Tuple[TfVal, DType]:
@@ -828,7 +841,8 @@ def _tfval_to_tensor_jax_dtype(val: TfVal,
       # The float0 type is not known to TF.
       if jax_dtype == dtypes.float0:
         val = np.zeros(np.shape(val), conversion_dtype.as_numpy_dtype)
-      tf_val = tf.convert_to_tensor(val, dtype=conversion_dtype)
+      tf_val = tf.convert_to_tensor(
+          _maybe_decode_gda(val), dtype=conversion_dtype)
       if do_memoize:
         _thread_local_state.constant_cache[const_key] = (val, tf_val)
     return tf_val, jax_dtype
