@@ -51,6 +51,9 @@ traceback_util.register_exclusion(__file__)
 
 XlaBackend = xla_client._xla.Client
 
+ShardedBuffer = xla_client.ShardedBuffer if xla_client._version >= 90 else Any
+use_sharded_buffer = xla_client._version >= 90
+
 FLAGS = flags.FLAGS
 
 # TODO(phawkins): Remove jax_xla_backend.
